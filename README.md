@@ -1,2 +1,3 @@
-# notify
-A small library to do in-memory notifications between goroutines in Go
+# Notify
+
+A small library to do basic in-memory notifications between goroutines in Go
