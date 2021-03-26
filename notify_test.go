@@ -37,7 +37,7 @@ func TestBroadcast(t *testing.T) {
 	ctx := context.Background()
 	r := require.New(t)
 
-	b := NewSingleUseBroadcast()
+	b := NewBroadcaster()
 
 	// register a bunch of listeners
 	const numListeners = 10

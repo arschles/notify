@@ -2,20 +2,20 @@ package notify
 
 import "sync"
 
-// Reusable is a multi-use notification intended for one goroutine to broadcast an event to one or more others.
-// Listener goroutines must accept the notification within a pre-defined amount of time or the notification will
-// be aborted. Once a notification goes out, all listener goroutines are automatically unregistered.
+// SingleUseBroadcast is a multi-use notification intended for one goroutine to broadcast an event to one or more others.
+// Listener goroutines get a notification from a signal channel (a <-chan struct{}) and then must throw the channel away
+// and request a new one if they would like to get another signal.
 //
-// All operations on Reusables are concurrency-safe.
+// Broadcasters are similar to cancellable contexts, except they can be re-registered to and contexts cannot
 //
-// Create a new SingleUseBroadcast with NewSingleUseBroadcast.
-type SingleUseBroadcast struct {
+// Create a new Broadcaster with NewBroadcaster.
+type Broadcaster struct {
 	chsM *sync.RWMutex
 	chs  []chan struct{}
 }
 
-func NewSingleUseBroadcast() *SingleUseBroadcast {
-	return &SingleUseBroadcast{
+func NewBroadcaster() *Broadcaster {
+	return &Broadcaster{
 		chsM: new(sync.RWMutex),
 		chs:  nil,
 	}
@@ -24,7 +24,7 @@ func NewSingleUseBroadcast() *SingleUseBroadcast {
 // Register indicates that the caller would like to listen to r. The returned channel will be closed when
 // a notification arrives. After the notification, this channel is closed and nothing will happen
 // to it again. If you want to re-register, call this function again and use the new return channel.
-func Register(r *SingleUseBroadcast) <-chan struct{} {
+func Register(r *Broadcaster) <-chan struct{} {
 	r.chsM.Lock()
 	defer r.chsM.Unlock()
 	newCh := make(chan struct{})
@@ -34,7 +34,7 @@ func Register(r *SingleUseBroadcast) <-chan struct{} {
 
 // Notify notifies all listeners on r. After Notify returns, all channels previously issued by Register
 // will be closed and all listeners will be notified
-func Notify(r *SingleUseBroadcast) {
+func Notify(r *Broadcaster) {
 	r.chsM.Lock()
 	defer r.chsM.Unlock()
 	for _, ch := range r.chs {
