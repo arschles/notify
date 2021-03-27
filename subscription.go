@@ -37,21 +37,25 @@ func SubscriptionTo(ctx context.Context, b *Broadcaster) *Subscription {
 }
 
 func TickingSubscription(ctx context.Context, tickDur time.Duration) *Subscription {
+	ctx, done := context.WithCancel(ctx)
 	ticker := time.NewTicker(tickDur)
-	b := NewBroadcaster()
-
+	sub := &Subscription{
+		ctx:  ctx,
+		done: done,
+		c:    make(chan struct{}),
+	}
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				b.Broadcast()
+				sub.send()
 			}
 		}
 	}()
 
-	return SubscriptionTo(ctx, b)
+	return sub
 }
 
 func (s *Subscription) send() bool {
@@ -63,9 +67,11 @@ func (s *Subscription) send() bool {
 	}
 }
 
-// Block will block until a broadcast on the underlying broadcaster happens or Stop() is called
-func (s *Subscription) Block() {
-	<-s.c
+// Register returns a channel that will receive (not close) every time a subscription happens. Since
+// the channel receives once, only one goroutine should plan on using it. Generally speaking,
+// if a goroutine wants to subscribe to a Broadcaster, it should plan on creating its own Subscription(s)
+func (s *Subscription) Register(ctx context.Context) <-chan struct{} {
+	return s.c
 }
 
 // Stop immediately causes all calls to Block() to unblock, and stops listening to
