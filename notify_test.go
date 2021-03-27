@@ -43,7 +43,7 @@ func TestBroadcast(t *testing.T) {
 	const numListeners = 10
 	chans := make([]<-chan struct{}, numListeners)
 	iter(10, func(i int) error {
-		chans[i] = Register(b)
+		chans[i] = b.Register()
 		return nil
 	})
 
@@ -62,7 +62,7 @@ func TestBroadcast(t *testing.T) {
 	notifiedCh := make(chan struct{})
 	go func() {
 		time.Sleep(1 * time.Second)
-		Notify(b)
+		b.Broadcast()
 		close(notifiedCh)
 	}()
 	<-notifiedCh

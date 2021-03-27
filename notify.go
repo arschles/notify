@@ -2,14 +2,17 @@ package notify
 
 import (
 	"sync"
-	"time"
 )
 
-// SingleUseBroadcast is a multi-use notification intended for one goroutine to broadcast an event to one or more others.
-// Listener goroutines get a notification from a signal channel (a <-chan struct{}) and then must throw the channel away
-// and request a new one if they would like to get another signal.
+// Broadcaster is a single-use broadcasting system. One or more goroutines can listen to notifications
+// any goroutine (usually not in the aforementioned group) can broadcast a signal to the listeners.
 //
-// Broadcasters are similar to cancellable contexts, except they can be re-registered to and contexts cannot
+// After a broadcast happens, all listeners are automatically woken up and de-registered. If they want to
+// continue listening to notifications, they must re-register. In this way, this Broadcaster type is
+// similar to a cancellable context, but it can be re-registered to (contexts cannot easily).
+//
+// If you'd like to establish a Subscription that you do not have to re-register for every time a notification
+// comes, see the Subscription type.
 //
 // Create a new Broadcaster with NewBroadcaster.
 type Broadcaster struct {
@@ -26,37 +29,6 @@ func NewBroadcaster() *Broadcaster {
 	}
 }
 
-// CloseableBroadcaster is a broadcaster type that can be closed. Most commonly, these are created by
-// calls to NewTickBroadcaster.
-type CloseableBroadcaster struct {
-	*Broadcaster
-	t *time.Ticker
-}
-
-// Close immedaitely calls Notify(c.Broadcaster) and then releases any background resources in use
-func (c *CloseableBroadcaster) Close() {
-	c.Notify()
-	c.t.Stop()
-}
-
-// NewTickBroadcaster returns a broadcaster that notifies every dur. After each time the returned
-// CloseableBroadcaster notifies, callers must re-Register() and get a new channel to listen on
-func NewTickBroadcaster(dur time.Duration) *CloseableBroadcaster {
-	ticker := time.NewTicker(dur)
-	b := NewBroadcaster()
-	go func() {
-		defer ticker.Stop()
-		for {
-			<-ticker.C
-			b.Notify()
-		}
-	}()
-	return &CloseableBroadcaster{
-		Broadcaster: b,
-		t:           ticker,
-	}
-}
-
 // Register indicates that the caller would like to listen to r. The returned channel will be closed when
 // a notification arrives. After the notification, this channel is closed and nothing will happen
 // to it again. If you want to re-register, call this function again and use the new return channel.
@@ -68,9 +40,9 @@ func (b *Broadcaster) Register() <-chan struct{} {
 	return newCh
 }
 
-// Notify notifies all listeners on r. After Notify returns, all channels previously issued by Register
+// Broadcast notifies all listeners on r. After Notify returns, all channels previously issued by Register
 // will be closed and all listeners will be notified
-func (b *Broadcaster) Notify() {
+func (b *Broadcaster) Broadcast() {
 	b.chsM.Lock()
 	defer b.chsM.Unlock()
 	for _, ch := range b.chs {

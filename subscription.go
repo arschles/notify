@@ -1,6 +1,9 @@
 package notify
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Subscription struct {
 	ctx  context.Context
@@ -31,6 +34,24 @@ func SubscriptionTo(ctx context.Context, b *Broadcaster) *Subscription {
 		}
 	}()
 	return ret
+}
+
+func TickingSubscription(ctx context.Context, tickDur time.Duration) *Subscription {
+	ticker := time.NewTicker(tickDur)
+	b := NewBroadcaster()
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				b.Broadcast()
+			}
+		}
+	}()
+
+	return SubscriptionTo(ctx, b)
 }
 
 func (s *Subscription) send() bool {
