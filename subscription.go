@@ -2,6 +2,7 @@ package notify
 
 import (
 	"context"
+	"log"
 	"time"
 )
 
@@ -28,8 +29,10 @@ func SubscriptionTo(ctx context.Context, b *Broadcaster) *Subscription {
 			nCh := b.Register()
 			select {
 			case <-nCh:
+				log.Printf("received event, sending")
 				ret.send()
 			case <-ctx.Done():
+				log.Printf("context done (in SuscriptioTo)")
 				return
 			}
 		}
@@ -62,8 +65,10 @@ func TickingSubscription(ctx context.Context, tickDur time.Duration) *Subscripti
 func (s *Subscription) send() bool {
 	select {
 	case <-s.ctx.Done():
+		log.Printf("send failed, ctx done")
 		return false
 	case s.c <- struct{}{}:
+		log.Printf("send success")
 		return true
 	}
 }

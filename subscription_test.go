@@ -2,6 +2,7 @@ package notify
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -10,19 +11,24 @@ import (
 
 func TestSubscriptionMultipleEvents(t *testing.T) {
 	const timeout = 1 * time.Second
-	ctx, done := context.WithTimeout(context.Background(), timeout)
-	defer done()
+	ctx := context.Background()
+
 	r := require.New(t)
 	b := NewBroadcaster()
 
 	sub := SubscriptionTo(ctx, b)
+	defer sub.Stop()
 
 	const numNotifies = 10
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
+		defer wg.Done()
 		for i := 0; i < numNotifies; i++ {
 			b.Broadcast()
 		}
 	}()
+	wg.Wait()
 
 	for i := 0; i < numNotifies; i++ {
 		select {

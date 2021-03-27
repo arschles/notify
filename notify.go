@@ -16,7 +16,7 @@ import (
 //
 // Create a new Broadcaster with NewBroadcaster.
 type Broadcaster struct {
-	chsM *sync.RWMutex
+	chsM *sync.Mutex
 	chs  []chan struct{}
 }
 
@@ -24,7 +24,7 @@ type Broadcaster struct {
 // on (Notify)
 func NewBroadcaster() *Broadcaster {
 	return &Broadcaster{
-		chsM: new(sync.RWMutex),
+		chsM: new(sync.Mutex),
 		chs:  nil,
 	}
 }
