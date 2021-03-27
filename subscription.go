@@ -6,6 +6,7 @@ import (
 )
 
 type Subscription struct {
+	Registrant
 	ctx  context.Context
 	done func()
 	c    chan struct{}

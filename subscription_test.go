@@ -27,9 +27,13 @@ func TestSubscriptionMultipleEvents(t *testing.T) {
 	for i := 0; i < numNotifies; i++ {
 		select {
 		case <-sub.Register(ctx):
+			t.Logf("Received notification")
 		case <-ctx.Done():
 			r.Failf("timeout", "timed out after %s", timeout)
 		}
 	}
+}
 
+func TestSubscriptionClose(t *testing.T) {
+	t.Fatal("TODO")
 }
