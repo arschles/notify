@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// Subscription will maintain a subscription to a broadcaster
 type Subscription struct {
 	Registrant
 	ctx  context.Context
